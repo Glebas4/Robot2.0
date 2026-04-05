@@ -59,9 +59,7 @@ class Robot():
     def get_dist(self) -> tuple:
         self.send_pkg(key=2, cmd=0, val=0)
         data = list(self.ser.read(3))
-
-        data[2] = 50 #Правый дальномер помер,поэтому вставялем костыль
-
+        
         return data
 
     ''' Когда программа завершена или произошла ошибка, то выключаем моторы робота для удобства'''
