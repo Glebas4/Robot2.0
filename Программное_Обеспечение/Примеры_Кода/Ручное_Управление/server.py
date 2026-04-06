@@ -6,41 +6,22 @@ rob = Robot()
 
 def control(buttons: tuple) -> None:
     w, a, s, d = buttons
-    
-    if w and a:
+
+    if w:
         rob.set_motor(rob.R, rob.FWD, 255)
-        rob.set_motor(rob.L, rob.FWD, 130)
-
-    elif w and d:
-        rob.set_motor(rob.R, rob.FWD, 220)
-        rob.set_motor(rob.L, rob.FWD, 160)
-
-
-    elif s and a:
-        rob.set_motor(rob.R, rob.BWD, 255)
-        rob.set_motor(rob.L, rob.BWD, 130)
-
-    elif s and d:
-        rob.set_motor(rob.R, rob.FWD, 220)
-        rob.set_motor(rob.L, rob.FWD, 160)
-
-
-
-    elif w:
-        rob.set_motor(rob.R, rob.FWD, 220)
-        rob.set_motor(rob.L, rob.FWD, 130)
+        rob.set_motor(rob.L, rob.FWD, 255)
 
     elif s:
-        rob.set_motor(rob.R, rob.BWD, 220)
-        rob.set_motor(rob.L, rob.BWD, 130)
+        rob.set_motor(rob.R, rob.BWD, 255)
+        rob.set_motor(rob.L, rob.BWD, 255)
 
     elif a:
-        rob.set_motor(rob.R, rob.FWD, 220)
-        rob.set_motor(rob.L, rob.BWD, 130)
+        rob.set_motor(rob.R, rob.FWD, 180)
+        rob.set_motor(rob.L, rob.BWD, 180)
 
     elif d:
-        rob.set_motor(rob.R, rob.BWD, 220)
-        rob.set_motor(rob.L, rob.FWD, 130)
+        rob.set_motor(rob.R, rob.BWD, 180)
+        rob.set_motor(rob.L, rob.FWD, 180)
 
     else:
         rob.off()
@@ -61,7 +42,6 @@ def main():
 
     while True:
         data = list(client.recv(4))
-        #print(data)
         control(data)
 
 
