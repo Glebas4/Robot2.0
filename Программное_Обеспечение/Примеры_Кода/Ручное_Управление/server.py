@@ -29,8 +29,8 @@ def control(buttons: tuple) -> None:
 
 
 def main():
-    socket.timeout(0.1)
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.settimeout(0.0)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     server.bind(('', 12345)) 
