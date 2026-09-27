@@ -1,7 +1,6 @@
 ''' Импорт необходимых модулей '''
-import atexit
 import serial
-import os
+import sys
 import time
 from colorama import Fore, Style, init
 
@@ -14,7 +13,7 @@ class Robot():
         self.L = 0
         self.FWD = 1
         self.BWD = 0
-        self.ex = atexit.register(self.shutdown)
+        sys.excepthook = self.shutdown
         ''' Попытка подключиться к микроконтроллеру'''
         try:
             self.ser = serial.Serial('/dev/ttyUSB0', self.baudrate, timeout=1)
@@ -63,6 +62,6 @@ class Robot():
         return data
 
     ''' Когда программа завершена или произошла ошибка, то выключаем моторы робота для удобства'''
-    def shutdown(self):
+    def shutdown(self, exctype, value, tb):
         self.off()
-        print(Fore.YELLOW + Style.BRIGHT + '[ROBOT]' + Fore.LIGHTWHITE_EX + ' Shutdown')
+        printvalue)
