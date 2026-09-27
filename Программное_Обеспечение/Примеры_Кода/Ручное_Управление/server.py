@@ -29,6 +29,7 @@ def control(buttons: tuple) -> None:
 
 
 def main():
+    socket.settimeout(0.1)
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -41,8 +42,11 @@ def main():
     print(f'Client ip: {address}')
 
     while True:
-        data = list(client.recv(4))
-        control(data)
+        try:
+            data = list(client.recv(4))
+            control(data)
+        except TimeoutError:
+            pass
 
 
 if __name__ == '__main__':
