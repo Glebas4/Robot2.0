@@ -42,7 +42,7 @@ class ManualControl:
 
 
     def send_pkg(self, pkg: tuple) -> None:
-        self.socket.sendall(bytes(pkg))
+        self.socket.send(bytes(pkg))
 
 
 
