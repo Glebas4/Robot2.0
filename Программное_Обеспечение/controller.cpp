@@ -1,5 +1,36 @@
 #include <Arduino.h>
 #include <Ultrasonic.h>
+#include <FastLED.h>
+
+
+#define MOTOR_RIGHT 0
+#define BWD 0
+#define MOTOR_LEFT 1
+#define FWD 1
+#define STOP 2
+#define SONAR_READ 2
+#define LED 3
+#define ON 1
+#define OFF 0
+
+
+#define leds_num 5
+#define led_pin 4
+
+#define R1 6
+#define R2 5
+
+#define L1 9
+#define L2 10
+
+#define sonar_L_trig 12
+#define sonar_L_echo 11
+
+#define sonar_F_trig 8
+#define sonar_F_echo 7
+
+#define sonar_R_trig 3
+#define sonar_R_echo 2
 
 
 const bool FORWARD = true;
@@ -21,7 +52,6 @@ class MOTOR
       
     void stop()
     {
-      //this->on(!this->dir, 255);
       digitalWrite(_pin1, 1);
       digitalWrite(_pin2, 1);
     }
@@ -41,28 +71,25 @@ class MOTOR
           digitalWrite(_pin1, 0);
         }
     }
-
-    void reverse()
-    {
-      uint8_t n = _pin1;
-      _pin1 =_pin2;
-      _pin2 = n;
-    }
 };
 
 
-MOTOR motor_R(6, 5);
-MOTOR motor_L(9, 10);
+MOTOR motor_R(R1, R2);
+MOTOR motor_L(L1, L2);
 
-Ultrasonic sonar_L(12, 11);
-Ultrasonic sonar_F(8, 7);
-Ultrasonic sonar_R(3, 2);
+Ultrasonic sonar_L(sonar_L_trig, sonar_L_echo);
+Ultrasonic sonar_F(sonar_F_trig, sonar_F_echo);
+Ultrasonic sonar_R(sonar_R_trig, sonar_R_echo);
+
+CRGB leds[leds_num];
 
 
 void setup() 
 {
   Serial.begin(115200);
+  FastLED.addLeds<WS2812, led_pin, GRB>(leds, leds_num);
 }
+
 
 
 void loop() 
@@ -81,36 +108,42 @@ void loop()
         switch(key)
               {
 
-                case 0: //Right motor manual control
+                case MOTOR_RIGHT: //Right motor manual control
                       switch(cmd)
                       {
-                        case 0: motor_L.on(BACKWARD, val); break;
-                        case 1: motor_L.on(FORWARD, val); break;
-                        case 2: motor_L.stop(); break;       
+                        case BWD: motor_L.on(BACKWARD, val); break;
+                        case FWD: motor_L.on(FORWARD, val); break;
+                        case STOP: motor_L.stop(); break;       
                         default: break;
                       }
 
                       break;
 
               
-                case 1: //Left motor manual control
+                case MOTOR_LEFT: //Left motor manual control
                       switch(cmd)
                       {
-                        case 0: motor_R.on(BACKWARD, val); break;
-                        case 1: motor_R.on(FORWARD, val); break;
-                        case 2: motor_R.stop(); break;       
+                        case BWD: motor_R.on(BACKWARD, val); break;
+                        case FWD: motor_R.on(FORWARD, val); break;
+                        case STOP: motor_R.stop(); break;       
                         default: break;
                       }
 
                       break;
 
-                      
-                case 2: //Stop motors
-                      motor_L.stop(); 
-                      motor_R.stop(); 
-                      break;
 
-                case 3:
+                case LED:                
+                      switch(cmd)
+                      {
+                        case ON: FastLED.showColor(CRGB::White); break;
+                        case OFF: FastLED.showColor(CRGB::Black); break;
+                        default: break;
+                      }
+                      
+                      break; 
+
+
+                case SONAR_READ:
                       uint8_t l = sonar_L.read();
                       uint8_t f = sonar_F.read();
                       uint8_t r = sonar_R.read();
@@ -123,8 +156,9 @@ void loop()
                       Serial.write(dist, 3);
                       break;
 
+
                 default: break;         
               }
-      }  
 
+      }  
 }
