@@ -7,6 +7,13 @@ import math
 DICT_NAME = "DICT_4X4_250"
 KOEF = 10
 
+GREEN = (0, 255, 0)
+RED = (0, 0, 255)
+
+
+IP = '10.217.123.92'
+PORT = 12345
+
 
 detector = cv.aruco.ArucoDetector(
     cv.aruco.getPredefinedDictionary(getattr(cv.aruco, DICT_NAME)), 
@@ -22,19 +29,49 @@ def calc_cords(pt1:tuple, pt2:tuple, dx:int, dy:int) -> tuple:
     return (pnt1, pnt2)
 
 
+def calc_ang(dx:int, dy:int) -> int:
+    if dx and dy:
+        ang = int(math.degrees(math.atan(abs(dy)/abs(dx))))
+        if dx > 0:
+            if dy > 0:
+                return 360 - ang
+
+            return ang
+
+        else:
+            if dy > 0:
+                return ang + 180
+
+            return 180 - ang
+
+    elif not dx:
+        if dy > 0:
+            return 270
+
+        return 90
+
+    if dx > 0:
+        return 0
+
+    return 180
+
+    
+
+
+
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect((IP, PORT))
 
 def main():
     cap = cv.VideoCapture(0, cv.CAP_DSHOW)
 
-    ip = input('ip: ')
-    port = int(input('port: '))
-
-    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket.connect((ip, port))
+    targ_ang = int(input('Какой угол удерживать ?'))
 
     while True:
         _, img = cap.read()
         msg = 2
+        color = GREEN
 
         corners, ids, _ = detector.detectMarkers(img)
         
@@ -46,43 +83,37 @@ def main():
             dx = pt1[0] - pt2[0]
             dy = pt1[1] - pt2[1]
 
-            if dy:
-                ang = int(abs(math.degrees(math.atan(dx/dy))))
-                #print(ang)
+            curr_ang = calc_ang(dx, dy)
 
-                if dx > 0:
-                    if dy < 0:
-                        ang = 360 - ang
-
-                    else:
-                        ang = 180 + ang
+            if abs(curr_ang - targ_ang) > 5:
+                color = RED
+                if curr_ang < targ_ang or curr_ang > 180 + targ_ang:
+                    msg = 0
 
                 else:
-                    if dy < 0:
-                        pass
+                    msg = 1
 
-                    else:      
-                        ang = 180 - ang
+                 
 
-            
+            #img = cv.line(img, (pt1[0], pt1[1]), (pt2[0], pt1[1]), RED, 2)
+            #img = cv.line(img, (pt1[0], pt2[1]), (pt2[0], pt2[1]), RED, 2)
+            #img = cv.line(img, (pt2[0], pt1[1]), (pt2[0], pt2[1]), (255, 255, 255), 2)
+            #img = cv.line(img, (pt1[0], pt1[1]), (pt1[0], pt2[1]), (255, 255, 255), 2)
+            #img = cv.line(img, (0, pt2[1]), (720, pt2[1]), (255, 150, 255), 2)
 
-                if abs(360 - ang) > 5:
-                    if ang < 180:
-                        msg = 1
-                    else:
-                        msg = 0
-                        
-
+            img = cv.line(img, (0, pt2[1]), (720, pt2[1]), (0, 127, 255), 2)
             pt1, pt2 = calc_cords(pt1, pt2, dx, dy)
-            img = cv.line(img, pt1, pt2, (0,0,255), 2)
+            img = cv.line(img, pt1, pt2, color, 2)
+            img = cv.putText(img, str(curr_ang), (500, 70), cv.FONT_HERSHEY_SIMPLEX, 2, color, 2, cv.LINE_AA)
+
+            #img = cv.line(img, (pt1[0], pt1[1]), (pt2[0], pt1[1]), color, 2)
+
 
  
-        socket.send(str(msg).encode('utf-8'))
-
-        img = cv.line(img, (100, 0), (100, 200), (0, 255, 0))
-
+        sock.send(str(msg).encode('utf-8'))
 
         cv.imshow('result', img) 
+     
     
         ch = cv.waitKey(5)
         if ch == 27:
@@ -92,3 +123,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
