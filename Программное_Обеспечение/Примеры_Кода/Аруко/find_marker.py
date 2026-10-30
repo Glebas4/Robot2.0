@@ -22,14 +22,20 @@ detector = cv.aruco.ArucoDetector(
 
 
 
-def calc_cords(pt1:tuple, pt2:tuple, dx:int, dy:int) -> tuple:
+def calc_cords(pt1:tuple, pt2:tuple) -> tuple:
+    dx = pt2[0] - pt1[0]
+    dy = pt2[1] - pt1[1]
+
     pnt1 = (pt1[0] + dx * KOEF, pt1[1] + dy * KOEF)
     pnt2 = (pt2[0] - dx * KOEF, pt2[1] - dy * KOEF)
 
     return (pnt1, pnt2)
 
 
-def calc_ang(dx:int, dy:int) -> int:
+def calc_ang(pt1:tuple, pt2:tuple) -> int:
+    dx = pt2[0] - pt1[0]
+    dy = pt2[1] - pt1[1]
+
     if dx and dy:
         ang = int(math.degrees(math.atan(abs(dy)/abs(dx))))
         if dx > 0:
@@ -78,12 +84,9 @@ def main():
 
         if ids is not None:
             pt1 = [int(val) for val in corners[0][0][0].tolist()]
-            pt2 = [int(val) for val in corners[0][0][3].tolist()]
+            pt2 = [int(val) for val in corners[0][0][3].tolist()] #pt1 -> pt2 это направление лица робота
 
-            dx = pt1[0] - pt2[0]
-            dy = pt1[1] - pt2[1]
-
-            curr_ang = calc_ang(dx, dy)
+            curr_ang = calc_ang(pt1, pt2)
 
             if abs(curr_ang - targ_ang) > 5:
                 color = RED
@@ -102,7 +105,7 @@ def main():
             #img = cv.line(img, (0, pt2[1]), (720, pt2[1]), (255, 150, 255), 2)
 
             img = cv.line(img, (0, pt2[1]), (720, pt2[1]), (0, 127, 255), 2)
-            pt1, pt2 = calc_cords(pt1, pt2, dx, dy)
+            pt1, pt2 = calc_cords(pt1, pt2)
             img = cv.line(img, pt1, pt2, color, 2)
             img = cv.putText(img, str(curr_ang), (500, 70), cv.FONT_HERSHEY_SIMPLEX, 2, color, 2, cv.LINE_AA)
 
@@ -123,4 +126,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
