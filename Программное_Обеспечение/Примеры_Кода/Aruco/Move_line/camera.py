@@ -23,14 +23,6 @@ detector = cv.aruco.ArucoDetector(
 
 
 
-def calc_cords(pt1:tuple, pt2:tuple, dx:int, dy:int) -> tuple:
-    pnt1 = (pt1[0] + dx * KOEF, pt1[1] + dy * KOEF)
-    pnt2 = (pt2[0] - dx * KOEF, pt2[1] - dy * KOEF)
-
-    return (pnt1, pnt2)
-
-
-
 def get_glob_ang(dx:int, dy:int) -> int:
     if dx and dy:
         ang = int(math.degrees(math.atan(abs(dy)/abs(dx))))
@@ -59,7 +51,6 @@ def get_glob_ang(dx:int, dy:int) -> int:
 
 
 
-
 def get_pnt_mark_ang(pnt: tuple, pt1: list, pt2: list) -> tuple:  #(ang_degrees, direction)
     direct = 0
     
@@ -72,7 +63,7 @@ def get_pnt_mark_ang(pnt: tuple, pt1: list, pt2: list) -> tuple:  #(ang_degrees,
     try:
         ang_deg = 180 - int(math.degrees(math.acos(cos_a)))
     except:
-        return (0, '')
+        return (0, 0)
 
     mark_vec = (pt2[0]-pt1[0], pt2[1]-pt1[1]) 
     pnt_vec = (pnt[0]-pt1[0], pnt[1]-pt1[1])
@@ -111,17 +102,15 @@ def signals(ang:int, direction: int) -> tuple: #(l_mot, r_mot) 180, -255   - Ð·Ð
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((IP, PORT))
 
+
+
 def main():
     cap = cv.VideoCapture(0, cv.CAP_DSHOW)
 
     point = (0, 240)
-    #first = True
 
     while True:
         _, img = cap.read()
-        #if first:
-        #    print(img.shape)
-        #    first = False
 
         corners, ids, _ = detector.detectMarkers(img)
         l = r = 0
@@ -136,10 +125,6 @@ def main():
 
             img = cv.arrowedLine(img, pt1, point, (0, 255, 0), 2)
             img = cv.arrowedLine(img, pt1, pt2, (255, 0, 0), 2)
-
-            #pt1, pt2 = calc_cords(pt1, pt2, pt1[0]-pt2[0], pt1[1]-pt2[1])
-
-            #img = cv.line(img, pt1, (0,0), (0, 0, 255), 2)
 
 
         sock.sendall(st.pack('>hh', l, r))
