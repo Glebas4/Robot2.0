@@ -25,7 +25,6 @@ class RobotCam():
         )
 
         self.cam = cv.VideoCapture(0, cv.CAP_DSHOW)
-        self.window_name = 'result'
 
         self._move_to_flag = False
         self._move_to_cords = [0, 0]
@@ -34,11 +33,12 @@ class RobotCam():
         self._set_ang_flag = False
         self._set_ang_val = 0
 
-        self.DONE = 1
+        self._DONE = 1
 
-        self.event = queue.Queue()
+        self._event = queue.Queue()
 
         self.mission = None
+        self.mission_done = False
 
 
 
@@ -46,7 +46,19 @@ class RobotCam():
         if self.mission is not None:
             self.thread = threading.Thread(target=self.mission, daemon=True)
             self.thread.start()
+
         self.proc()
+
+
+    @staticmethod
+    def calc_cords(pt1:tuple, pt2:tuple) -> tuple:
+        dx = pt2[0] - pt1[0]
+        dy = pt2[1] - pt1[1]
+
+        pnt1 = (pt1[0] + dx * 10, pt1[1] + dy * 10)
+        pnt2 = (pt2[0] - dx * 10, pt2[1] - dy * 10)
+
+        return (pnt1, pnt2)
 
 
 
@@ -157,23 +169,27 @@ class RobotCam():
 
 
 
-    def move_to(self, cords: tuple, tolerance_px: int = 30) -> None:
+    def move_to(self, cords: tuple, tolerance_px: int = 30, wait: bool = True) -> None:
         self._move_to_flag = True
         self._move_to_cords = cords
         self._move_to_tolerance = tolerance_px
+        if wait:
+            self._event.get()
 
 
 
-    def set_ang(self, ang: int) -> None:
+    def set_ang(self, ang: int, wait: bool = True) -> None:
         self._set_ang_flag = True
         self._set_ang_val = ang
+        if wait:
+            self._event.get()
 
 
 
     def proc(self) -> bool:    
-        while True:
+        while self.thread.is_alive() or self._move_to_flag or self._set_ang_flag:
             img_flag, img = self.cam.read()
-    
+
             if not img_flag:
                 raise Exception('А Где картинка алё')
 
@@ -181,15 +197,15 @@ class RobotCam():
             elif self._move_to_flag:
                 pt1, pt2 = self.get_mark_cords(img)
 
-                if pt1 == None:
+                if pt1 is None:
                    self.send_motors(0, 0) 
-                   continue
+                   
                    
                     
                 elif self.get_dist(pt1, self._move_to_cords) < self._move_to_tolerance:
-                    self._move_to_flag = False
                     self.send_motors(0, 0)
-                    self.event.put(self.DONE)
+                    self._move_to_flag = False
+                    self._event.put(self._DONE)
                         
                 else:
                     ang, direction = self.get_pnt_mark_ang(self._move_to_cords, pt1, pt2)
@@ -199,28 +215,41 @@ class RobotCam():
                     img = cv.arrowedLine(img, pt1, pt2, (255, 0, 0), 2)
 
 
+
             elif self._set_ang_flag:
 
                 pt1, pt2 = self.get_mark_cords(img)
                 
                 if pt1 is None: 
                     self.send_motors(0, 0) 
+                    
+                else:
+                    curr_ang = self.get_glob_ang(pt1, pt2)
 
-                curr_ang = self.get_glob_ang(pt1, pt2)
+                    if abs(curr_ang - self._set_ang_val) > 5:
+                        if curr_ang < self._set_ang_val or curr_ang > 180 + self._set_ang_val:
+                            self.send_motors(-90, 90)
 
-                if abs(curr_ang - self._set_ang_val) > 5:
-                    if curr_ang < self._set_ang_val or curr_ang > 180 + self._set_ang_val:
-                        self.send_motors(-95, 95)
+                        elif curr_ang > self._set_ang_val or curr_ang < 180 + self._set_ang_val:
+                            self.send_motors(90, -90)
 
                     else:
-                        self.send_motors(95, -95)
+                        self.send_motors(0, 0)
+                        self._set_ang_flag = False
+                        self._event.put(self._DONE)
 
-                else:
-                    self.send_motors(0, 0)
-                    self.event.put(self.DONE)
+                    p1, p2 = self.calc_cords(pt1, pt2)
+
+                    img = cv.line(img, p1, p2, (0, 255, 255), 2)
+                    img = cv.line(img, (0, pt2[1]), (720, pt2[1]), (0, 255, 0), 2)
+                    img = cv.putText(img, str(curr_ang), (500, 70), cv.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2, cv.LINE_AA)
+
 
 
             cv.imshow('result', img)
             ch = cv.waitKey(5)
             if ch == 27:
                 break
+
+        cv.destroyAllWindows()
+        return True
