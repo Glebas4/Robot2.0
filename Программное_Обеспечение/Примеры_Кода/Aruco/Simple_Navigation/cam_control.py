@@ -200,13 +200,11 @@ class RobotCam():
 
 
             elif self._set_ang_flag:
-                #stab_cnt = 0
 
                 pt1, pt2 = self.get_mark_cords(img)
                 
                 if pt1 is None: 
                     self.send_motors(0, 0) 
-                    continue
 
                 curr_ang = self.get_glob_ang(pt1, pt2)
 
@@ -218,14 +216,8 @@ class RobotCam():
                         self.send_motors(95, -95)
 
                 else:
-                    #stab_cnt += 1
                     self.send_motors(0, 0)
                     self.event.put(self.DONE)
-
-#                if stab_cnt == 20:
-#                    self.send_motors(0, 0)
-#                    self._set_ang_flag = False
-#                    self.event.put(self.DONE)
 
 
             cv.imshow('result', img)
