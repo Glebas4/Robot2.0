@@ -4,7 +4,7 @@ import math
 import struct as st
 import threading
 import queue
-
+import time
 
 
 class RobotCam():
@@ -32,6 +32,8 @@ class RobotCam():
 
         self._set_ang_flag = False
         self._set_ang_val = 0
+
+        self._last_time = None
 
         self._DONE = 1
 
@@ -142,15 +144,15 @@ class RobotCam():
 
     @staticmethod
     def signals_line(ang: int, direction: int) -> tuple: #(l_mot, r_mot) 180, -255   - значит BWD
-        K = 1.4
-        if ang > 90:
+        K = 1.6
+        if ang > 60:
             if direction == 0: # CW
-                return (130, -130)
+                return (110, 0)
 
-            return (-130, 130)
+            return (-110, 0)
 
 
-        l = r = 150
+        l = r = 140
         dif = int(ang * K)
 
         if direction == 0:
@@ -173,6 +175,7 @@ class RobotCam():
         self._move_to_flag = True
         self._move_to_cords = cords
         self._move_to_tolerance = tolerance_px
+        self._turned = False
         if wait:
             self._event.get()
 
@@ -199,18 +202,35 @@ class RobotCam():
 
                 if pt1 is None:
                    self.send_motors(0, 0) 
-                   
-                   
-                    
-                elif self.get_dist(pt1, self._move_to_cords) < self._move_to_tolerance:
-                    self.send_motors(0, 0)
-                    self._move_to_flag = False
-                    self._event.put(self._DONE)
-                        
+
                 else:
                     ang, direction = self.get_pnt_mark_ang(self._move_to_cords, pt1, pt2)
-                    l, r = self.signals_line(ang, direction)
-                    self.send_motors(l, r)
+
+                    if not self._turned:
+                        if ang < 6:
+                            self._turned = True
+
+                        elif direction == 0: # CW
+                            self.send_motors(105, -105)
+
+                        else:
+                            self.send_motors(-105, 105)
+                
+                    
+                        
+                    elif self.get_dist(pt1, self._move_to_cords) < self._move_to_tolerance:
+                        self.send_motors(0, 0)
+                        self._move_to_flag = False
+                        self._turned = False
+                        self._event.put(self._DONE)
+
+
+                    else:
+                        ang, direction = self.get_pnt_mark_ang(self._move_to_cords, pt1, pt2)
+                        l, r = self.signals_line(ang, direction)
+                        self.send_motors(l, r)
+
+                    
                     img = cv.arrowedLine(img, pt1, self._move_to_cords, (0, 255, 0), 2)
                     img = cv.arrowedLine(img, pt1, pt2, (255, 0, 0), 2)
 
@@ -227,16 +247,24 @@ class RobotCam():
                     curr_ang = self.get_glob_ang(pt1, pt2)
 
                     if abs(curr_ang - self._set_ang_val) > 5:
+                        self._last_time = None
                         if curr_ang < self._set_ang_val or curr_ang > 180 + self._set_ang_val:
                             self.send_motors(-90, 90)
 
                         elif curr_ang > self._set_ang_val or curr_ang < 180 + self._set_ang_val:
                             self.send_motors(90, -90)
 
+
                     else:
                         self.send_motors(0, 0)
-                        self._set_ang_flag = False
-                        self._event.put(self._DONE)
+
+                        if not(self._last_time is None) and time.perf_counter() - self._last_time > 2:
+                            self._set_ang_flag = False
+                            self._event.put(self._DONE)
+
+                        elif self._last_time is None:
+                            self._last_time = time.perf_counter()
+
 
                     p1, p2 = self.calc_cords(pt1, pt2)
 
@@ -251,5 +279,8 @@ class RobotCam():
             if ch == 27:
                 break
 
+        
         cv.destroyAllWindows()
+        self.sock.close()
+
         return True
