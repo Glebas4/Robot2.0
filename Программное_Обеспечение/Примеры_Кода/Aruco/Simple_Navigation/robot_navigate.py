@@ -2,7 +2,11 @@ import socket
 from robot import Robot
 import struct as st
 
+
 rob = Robot()
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,34 +20,30 @@ def main():
     client, address = server.accept()
     print(f'Connect: {address}')
 
-    server.settimeout(0.1)
+    server.settimeout(1)
 
-    rob.led(rob.ON)
+    rob.led(True)
 
     while True:
         try:
-            L_dir = R_dir = rob.FWD
-
             data_pkg = client.recv(4)
-            L, R = st.unpack('>hh', data_pkg)
+            L_val, R_val = st.unpack('>hh', data_pkg)
 
-            if not(L and R):
+            if not L_val and not R_val:
                 rob.stop()
                 continue
 
-            if L < 0:
-                L_dir = rob.BWD
-
-            if R < 0:
-                R_dir = rob.BWD
-
-            rob.set_motor(rob.R, R_dir, abs(R))
-            rob.set_motor(rob.L, L_dir, abs(L))
+            rob.set_motor(rob.R, R_val)
+            rob.set_motor(rob.L, L_val)
 
             
-        except TimeoutError:
+        except BaseException:
+            rob.stop()
             rob.off()
+            server.close()
+            break
 
+    print('Disconnected')
 
 if __name__ == '__main__':
     main()
