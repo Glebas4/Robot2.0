@@ -1,0 +1,17 @@
+[Unit]
+Description=Navigate script
+After=network.target
+
+[Service]
+User=robot
+WorkingDirectory=/home/robot
+ExecStart=/usr/bin/python3 /home/robot/navigate.py
+
+Restart=always
+RestartSec=3
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
